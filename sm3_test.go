@@ -19,7 +19,7 @@ func TestSM3_1(t *testing.T) {
 	calcVal := Byte2String(uhash)
 
 	if calcVal != trueVal {
-		t.Errorf("expected: %x,\nbut got: %v\n", trueVal, calcVal)
+		t.Errorf("expected: %s,\nbut got: %s\n", trueVal, calcVal)
 	}
 }
 
@@ -39,7 +39,33 @@ func TestSM3_2(t *testing.T) {
 	calcVal := Byte2String(uhash)
 
 	if calcVal != trueVal {
-		t.Errorf("expected: %x,\nbut got: %v\n", trueVal, calcVal)
+		t.Errorf("expected: %s,\nbut got: %s\n", trueVal, calcVal)
+	}
+}
+
+func TestSM3_3(t *testing.T) {
+	msg := "abcd"
+	var buffer [4]byte
+	trueVal := "debe9ff92275b8a138604889c18e5a4d6fdb70e5387e5765293dcba39c0c5732"
+
+	copy(buffer[:], msg)
+	hw := NewSM3()
+	for i := 0; i < 15; i++ {
+		hw.Write(buffer[:])
+	}
+
+	uhash := make([]uint8, 32)
+	hw.Sum(uhash[:0])
+
+	// Continue write, the result still the same,
+	// for hw.Sum() not change the hash state
+	hw.Write(buffer[:])
+	uhash = make([]uint8, 32)
+	hw.Sum(uhash[:0])
+	calcVal := Byte2String(uhash)
+
+	if calcVal != trueVal {
+		t.Errorf("Sum() of hash.Hash interface is not implemented.\nexpected: %s,\nbut got: %s\n", trueVal, calcVal)
 	}
 }
 

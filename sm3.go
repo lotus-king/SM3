@@ -9,10 +9,8 @@ import (
 type SM3 struct {
 	digest      [8]uint32  // digest represents the partial evaluation of V
 	T           [64]uint32 // constant
+	length      uint64     // length of the message
 	unhandleMsg []byte     // uint8  //
-	// hashcode    string     // hash result
-	// offset      uint32     // offset of the last block
-	length uint64 // length of the message
 }
 
 func NewSM3() hash.Hash {
@@ -36,6 +34,31 @@ func NewSM3() hash.Hash {
 	return sm3
 }
 
+func CopySM3(sm3 *SM3) *SM3 {
+	cpsm3 := &SM3{length: sm3.length}
+
+	cpsm3.digest[0] = sm3.digest[0]
+	cpsm3.digest[1] = sm3.digest[1]
+	cpsm3.digest[2] = sm3.digest[2]
+	cpsm3.digest[3] = sm3.digest[3]
+	cpsm3.digest[4] = sm3.digest[4]
+	cpsm3.digest[5] = sm3.digest[5]
+	cpsm3.digest[6] = sm3.digest[6]
+	cpsm3.digest[7] = sm3.digest[7]
+
+	cpsm3.unhandleMsg = make([]byte, len(sm3.unhandleMsg))
+	copy(cpsm3.unhandleMsg, sm3.unhandleMsg)
+
+	// Set T[i]
+	for i := 0; i < 16; i++ {
+		cpsm3.T[i] = 0x79cc4519
+	}
+	for i := 16; i < 64; i++ {
+		cpsm3.T[i] = 0x7a879d8a
+	}
+	return cpsm3
+}
+
 // Reset clears the internal state by zeroing bytes in the state buffer.
 // This can be skipped for a newly-created hash state; the default zero-allocated state is correct.
 func (sm3 *SM3) Reset() {
@@ -51,10 +74,6 @@ func (sm3 *SM3) Reset() {
 
 	// Reset numberic states
 	sm3.length = 0
-	// sm3.offset = 0
-
-	// Reset
-	// sm3.hashcode = ""
 }
 
 // BlockSize, required by the hash.Hash interface.
@@ -269,13 +288,22 @@ func (sm3 *SM3) pad() []byte {
 // Sum appends the current hash to b and returns the resulting slice.
 // It does not change the underlying hash state.
 func (sm3 *SM3) Sum(in []byte) []byte {
-	msg := sm3.pad()
+	cpsm3 := CopySM3(sm3)
+
+	// Debug
+	// fmt.Println("Copy deug -------------------------------------------------->")
+	// cpsm3.printValues()
+	// sm3.printValues()
+	// cpsm3.printMsg()
+	// sm3.printMsg()
+
+	msg := cpsm3.pad()
 
 	// Finialize
-	sm3.update(msg, len(msg)/sm3.BlockSize())
+	cpsm3.update(msg, len(msg)/cpsm3.BlockSize())
 
 	// save hash to in
-	needed := sm3.Size()
+	needed := cpsm3.Size()
 	if cap(in)-len(in) < needed {
 		fmt.Println("---------------------Should not happen here.")
 		newIn := make([]byte, len(in), len(in)+needed)
@@ -285,7 +313,7 @@ func (sm3 *SM3) Sum(in []byte) []byte {
 	out := in[len(in) : len(in)+needed]
 
 	for i := 0; i < 8; i++ {
-		binary.BigEndian.PutUint32(out[i*4:], sm3.digest[i])
+		binary.BigEndian.PutUint32(out[i*4:], cpsm3.digest[i])
 	}
 
 	// debug
@@ -293,41 +321,6 @@ func (sm3 *SM3) Sum(in []byte) []byte {
 
 	return out
 }
-
-// func (sm3 *SM3) Hash() string {
-// 	blockSize := 64
-// 	nblocks := len(sm3.message) / blockSize
-
-// 	for i := 0; i < nblocks; i++ {
-// 		startPos := i * blockSize
-// 		W, W1 := sm3.messageExtend(sm3.message[startPos : startPos+blockSize])
-
-// 		// debug
-// 		printUint32Slice(W[:])
-// 		printUint32Slice(W1[:])
-
-// 		sm3.cf(W, W1)
-// 	}
-
-// 	// Transform sm3.digest[] to hashcode string
-// 	sm3.constructHashCode()
-
-// 	sm3.printValues()
-
-// 	return sm3.hashcode
-// }
-
-// func (sm3 *SM3) constructHashCode() {
-// 	fmt.Println("constructHashCode------------------------->")
-// 	for i := 0; i < 8; i++ {
-// 		sm3.hashcode += fmt.Sprintf("%x", sm3.digest[i])
-// 	}
-// 	fmt.Println(sm3.hashcode)
-// }
-
-// func (sm3 *SM3) GetHashCode() string {
-// 	return sm3.hashcode
-// }
 
 //------------------ ALL debug functions
 func (sm3 *SM3) printMsg() {
