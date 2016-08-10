@@ -74,6 +74,8 @@ func (sm3 *SM3) Reset() {
 
 	// Reset numberic states
 	sm3.length = 0
+
+	sm3.unhandleMsg = []byte{}
 }
 
 // BlockSize, required by the hash.Hash interface.
