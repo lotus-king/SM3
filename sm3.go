@@ -7,7 +7,8 @@ import (
 )
 
 func init() {
-	//crypto.RegisterHash(crypto.SHA1, New)
+	//To do...
+	//crypto.RegisterHash(crypto.SM3, New)
 }
 
 type SM3 struct {
@@ -24,7 +25,6 @@ const Size = 32
 const BlockSize = 64
 
 func New() hash.Hash {
-	//sm3 := &SM3{length: 0}
 	sm3 := new(SM3)
 	sm3.length = 0
 	sm3.digest[0] = 0x7380166f
@@ -46,32 +46,6 @@ func New() hash.Hash {
 	return sm3
 }
 
-/*
-func CopySM3(sm3 *SM3) *SM3 {
-	cpsm3 := &SM3{length: sm3.length}
-
-	cpsm3.digest[0] = sm3.digest[0]
-	cpsm3.digest[1] = sm3.digest[1]
-	cpsm3.digest[2] = sm3.digest[2]
-	cpsm3.digest[3] = sm3.digest[3]
-	cpsm3.digest[4] = sm3.digest[4]
-	cpsm3.digest[5] = sm3.digest[5]
-	cpsm3.digest[6] = sm3.digest[6]
-	cpsm3.digest[7] = sm3.digest[7]
-
-	cpsm3.unhandleMsg = make([]byte, len(sm3.unhandleMsg))
-	copy(cpsm3.unhandleMsg, sm3.unhandleMsg)
-
-	// Set T[i]
-	for i := 0; i < 16; i++ {
-		cpsm3.T[i] = 0x79cc4519
-	}
-	for i := 16; i < 64; i++ {
-		cpsm3.T[i] = 0x7a879d8a
-	}
-	return cpsm3
-}
-*/
 // Reset clears the internal state by zeroing bytes in the state buffer.
 // This can be skipped for a newly-created hash state; the default zero-allocated state is correct.
 func (sm3 *SM3) Reset() {
@@ -85,6 +59,13 @@ func (sm3 *SM3) Reset() {
 	sm3.digest[6] = 0xe38dee4d
 	sm3.digest[7] = 0xb0fb0e4e
 
+	// Set T[i]
+	for i := 0; i < 16; i++ {
+		sm3.T[i] = 0x79cc4519
+	}
+	for i := 16; i < 64; i++ {
+		sm3.T[i] = 0x7a879d8a
+	}
 	// Reset numberic states
 	sm3.length = 0
 
@@ -132,7 +113,6 @@ func (sm3 *SM3) p1(x uint32) uint32 {
 }
 
 func (sm3 *SM3) messageExtend(data []byte) (W [68]uint32, W1 [64]uint32) {
-	//fmt.Println("messageExtend--------->")
 
 	// big endian
 	for i := 0; i < 16; i++ {
@@ -154,7 +134,6 @@ func (sm3 *SM3) leftRotate(x uint32, i uint32) uint32 {
 
 // cf is compress function
 func (sm3 *SM3) cf(W [68]uint32, W1 [64]uint32) {
-	//fmt.Println("cf------->")
 
 	A := sm3.digest[0]
 	B := sm3.digest[1]
@@ -234,12 +213,6 @@ func (sm3 *SM3) Write(p []byte) (int, error) {
 }
 
 func (sm3 *SM3) pad() []byte {
-	//fmt.Println("pad------->")
-	//fmt.Println("message length:", sm3.length, "bits")
-
-	// Debug
-	// fmt.Println("Before padding:")
-	// sm3.printMsg()
 
 	// Make a copy not using unhandleMsg
 	msg := sm3.unhandleMsg
@@ -264,11 +237,9 @@ func (sm3 *SM3) pad() []byte {
 	msg = append(msg, uint8(sm3.length>>0&0xff))
 
 	if len(msg)%64 != 0 {
-		fmt.Println("------pad: Error, msgLen =", len(msg))
+		panic("pad: Error, msgLen =", len(msg))
 	}
 
-	// fmt.Println("After padding:")
-	// print msg
 	return msg
 }
 
@@ -295,45 +266,9 @@ func (sm3 *SM3) checkSum() [Size]byte {
 	return out
 }
 
-//------------------ ALL debug functions
-/*
-func (sm3 *SM3) printMsg() {
-	for i := 0; i < len(sm3.unhandleMsg); i++ {
-		fmt.Printf("%02x", sm3.unhandleMsg[i])
-		if i%4 == 3 {
-			fmt.Printf(" ")
-		}
-		if i%(4*8) == 31 {
-			fmt.Println("")
-		}
-	}
-	fmt.Println("")
-}
-
-func printUint32Slice(list []uint32) {
-	for i := 0; i < len(list); i++ {
-		fmt.Printf("%08x ", list[i])
-		if i%8 == 7 {
-			fmt.Println("")
-		}
-	}
-	fmt.Println("")
-}
-
-func (sm3 *SM3) printValues() {
-	for i := 0; i < 8; i++ {
-		fmt.Printf("%x ", sm3.digest[i])
-	}
-	fmt.Printf("\n")
-	// fmt.Println(sm3.hashcode)
-}
-*/
 func Sum(in []byte) [Size]byte {
-	sm3 := New()
+	var sm3 SM3
 	sm3.Reset()
 	sm3.Write(in[:])
-	tmp := sm3.Sum(nil)
-	var out [Size]byte
-	copy(out[:], tmp[:Size])
-	return out
+	return sm3.checkSum()
 }

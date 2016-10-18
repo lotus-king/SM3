@@ -1,7 +1,10 @@
 An Implementation of SM3 by Golang
 ==================================
 
-
+```
+Note by Lotus-king:
+I modify it so it's interface can exactly like SHA 
+```
 There is no Golang implementation of SM3 in Github. So I Write it when need it. And also I have wrote some unit test for it.
 
 BUT one thing should be noticed: **The code is a little mess.**
