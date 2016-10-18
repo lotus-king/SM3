@@ -2,7 +2,6 @@ package sm3
 
 import (
 	"encoding/binary"
-	"fmt"
 	"hash"
 )
 
@@ -26,23 +25,7 @@ const BlockSize = 64
 
 func New() hash.Hash {
 	sm3 := new(SM3)
-	sm3.length = 0
-	sm3.digest[0] = 0x7380166f
-	sm3.digest[1] = 0x4914b2b9
-	sm3.digest[2] = 0x172442d7
-	sm3.digest[3] = 0xda8a0600
-	sm3.digest[4] = 0xa96f30bc
-	sm3.digest[5] = 0x163138aa
-	sm3.digest[6] = 0xe38dee4d
-	sm3.digest[7] = 0xb0fb0e4e
-
-	// Set T[i]
-	for i := 0; i < 16; i++ {
-		sm3.T[i] = 0x79cc4519
-	}
-	for i := 16; i < 64; i++ {
-		sm3.T[i] = 0x7a879d8a
-	}
+	sm3.Reset()
 	return sm3
 }
 
@@ -237,7 +220,7 @@ func (sm3 *SM3) pad() []byte {
 	msg = append(msg, uint8(sm3.length>>0&0xff))
 
 	if len(msg)%64 != 0 {
-		panic("pad: Error, msgLen =", len(msg))
+		panic("SM3 pad: Error")
 	}
 
 	return msg
